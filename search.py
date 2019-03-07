@@ -8,7 +8,10 @@ def find_film(name):
     try:
         name = name.lower()
         df['title']= df['title'].astype(str).str.lower()
-        films = df.loc[df['title'].str.contains(name)] 
+        df['overview'] = df['overview'].astype(str).str.lower()
+        df['text'] = df['title'] + df['overview']
+        films = df.loc[df['text'].str.contains(name)] 
+
         films = films[['budget', 'title', 'id', 'overview', 'release_date']]
         #print(films.head())
         row_count = df.shape[0] # number of rows in dataframe
@@ -22,18 +25,12 @@ def find_film(name):
         return films_dict
         #print(films_dict)
         
-        #film_json = json.dumps(film_dict)
-        #print('film = ', film, '\n')
-        #film_dict = film.to_dict(orient = 'records')
-
-        #film_json = df.to_dict(orient = 'records')
-        #print('film dict = ',film_dict,"\n")
         
     except : 
         return None
 
 df = pd.read_csv('./tmdb_5000_movies.csv')
-#print(find_film('superman'))
+print(find_film('brilliant gus gorman'))
 
 
 
