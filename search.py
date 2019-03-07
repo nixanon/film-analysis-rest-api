@@ -6,7 +6,8 @@ import numpy as np # linear algebra
 
 def find_film(name):
     try:
-        
+        name = name.lower()
+        df['title']= df['title'].astype(str).str.lower()
         films = df.loc[df['title'].str.contains(name)] 
         films = films[['budget', 'title', 'id', 'overview', 'release_date']]
         #print(films.head())
@@ -32,6 +33,10 @@ def find_film(name):
         return None
 
 df = pd.read_csv('./tmdb_5000_movies.csv')
+#print(find_film('superman'))
+
+
+
 #df = df.fillna('')
 #df_json = find_film("Superman")
 
