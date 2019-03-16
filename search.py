@@ -2,7 +2,8 @@ import json
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 import numpy as np # linear algebra
 
-import nltk, math
+import nltk
+import math
 # from nltk.tokenize import RegexpTokenizer
 # from nltk.corpus import stopwords
 # from nltk.stem.porter import PorterStemmer 
