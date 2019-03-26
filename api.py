@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from film import Film
  
-
+ 
 app = Flask(__name__)
 CORS(app, resoures={r'/film*': {'origins': '*'}})
 film_model = Film()
@@ -14,7 +14,7 @@ def film():
     if name == "":
         #print('parsed name is empty')
         return "empty", 200
-    result = film_model.query(name)
+    result = film_model.find_film(str(name))
     if result is not None:
         print('result is not none and is = \n', result)
         return jsonify(result)

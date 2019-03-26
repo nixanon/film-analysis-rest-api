@@ -31,16 +31,6 @@ class Film:
         
         print('sucess ', (time.time()-start))
 
-        print('\nTerm_Freqs for year in Jurassic World: ',self.term_freqs['Jurassic World']['year'])
-        #print('\nTerm_Freqs for world in Jurassic World: ',self.term_freqs['Jurassic World']['world'])
-        
-        print('\nDoc_Freqs for year: ',self.doc_freqs['year'])
-        #print('\nDoc_Freqs for world: ',self.doc_freqs['world'])
-
-        print('\nTF_IDFs for year in Jurassic World ',self.tf_idfs['Jurassic World']['year'])
-        #print('\nTF_IDFs for world in Jurassic World: ',self.tf_idfs['Jurassic World']['world'] )
-
-        print('\n N: ', len(self.term_freqs), 'Num of Rows in tf_idfs: ', len(self.tf_idfs), len(self.df_movies.index))
            
     def process(self, df):
         doc = str(df['overview']).lower() # convert to lowercase
@@ -72,8 +62,6 @@ class Film:
                 self.tf_idfs[title][token] = weight
                 length += weight**2
             self.doc_lens[title] = math.sqrt(length)
-            if title == 'Jurassic World':
-                print('normalized len: ', self.doc_lens[title])
     
     # normalize all of the weights
     def normWeights(self):
@@ -89,28 +77,22 @@ class Film:
 
     def find_film(self, name):
         try:
-            result = self.query(name)
-            name = result[0] 
-            #score = result[1]
+            name = self.query(name)
             print('name: ', name)
-            print('score: ', score)
             
-            self.df['title']= self.df['title'].astype(str).str.lower()
-            self.df['overview'] = self.df['overview'].astype(str).str.lower()
-                # df['text'] = df['title'] + df['overview']
-            films = self.df.loc[self.df['title'].str.contains(name)] 
-
+            
+            # df['text'] = df['title'] + df['overview']
+            films = self.df_movies.loc[self.df_movies['title'].str.match(name)] 
+            print('found film in df')
             films = films[['budget', 'title', 'id', 'overview', 'release_date']]
-                #print(films.head())
-            self.row_count = df.shape[0] # number of rows in dataframe
+            print(films.head())
+            row_count = self.df_movies.shape[0] # number of rows in dataframe
             if row_count < 5:
                 films = films.head(row_count) 
             else:
                 films = films.head()# save first 5 rows       
-                #films_dict = films.set_index('title').T.to_dict()
             films_dict = films.to_dict('records')
-            return films_dict
-                #print(films_dict)       
+            return films_dict   
         except : 
             return None
 
@@ -124,6 +106,7 @@ class Film:
         commondocs = None
         for token in q_str.split():
             token = self.stemmer.stem(token)
+            print('token = ', token)
             if token not in self.postings_list:
                 continue
             try:
@@ -156,16 +139,9 @@ class Film:
         
         a,w = zip(*max_score)
         print('a = ', a)
-        print('w = ', w)
-        try:
-            if a[0] in commondocs:
-                return a[0], w[0]
-            else:
-                return "fetch more", 0
-        except UnboundLocalError:
-            return "None", 0
+        return str(a[0])
 
-film_model = Film()
+#film_model = Film()
 #film_model.query('hero')
 
 # df = pd.read_csv('./tmdb_5000_movies.csv')
