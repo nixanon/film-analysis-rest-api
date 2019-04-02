@@ -9,9 +9,9 @@ from nltk.stem.porter import PorterStemmer
 from math import log10, sqrt
 from collections import Counter
 
+df_movies = pd.read_csv('./tmdb_5000_movies.csv')
 class Film:
     def __init__(self):
-        self.df_movies = pd.read_csv('./tmdb_5000_movies.csv')
         self.stemmer = PorterStemmer()
         self.tokenizer = RegexpTokenizer(r'[a-zA-Z]+')
         self.tf_idfs = {}                        # tf-idf vectors
@@ -23,7 +23,7 @@ class Film:
 
         start = time.time()
         try:
-            self.df_movies.apply(self.process, axis=1) # perform additonal processing
+            df_movies.apply(self.process, axis=1) # perform additonal processing
             self.calcTFIDF()
             self.normWeights()
         except:
@@ -77,20 +77,25 @@ class Film:
 
     def find_film(self, name):
         try:
-            name = self.query(name)
-            print('name: ', name)
+            results = self.query(name)
+            films = []
+            #df = pd.Series(np.random.randn( len(results[0]) ) ) # init a pandas series for the top 10 score values
+            for i in range(len(results[0])):
+                #print('name: {}, score: {}'.format(results[0][i], results[1][i]) )  
+                temp_df = df_movies.loc[df_movies['title'].str.match(results[0][i])]
+                temp_df['score'] = results[1][i]
+                films.append(temp_df)     
             
-            
-            # df['text'] = df['title'] + df['overview']
-            films = self.df_movies.loc[self.df_movies['title'].str.match(name)] 
+            #print('\n')
+            films = pd.concat(films)
             print('found film in df')
-            films = films[['budget', 'title', 'id', 'overview', 'release_date']]
-            print(films.head())
-            row_count = self.df_movies.shape[0] # number of rows in dataframe
-            if row_count < 5:
+            films = films[['budget', 'title', 'id', 'overview', 'release_date', 'score']]
+            #print(films.head(10))
+            row_count = df_movies.shape[0] # number of rows in dataframe
+            if row_count < 10:
                 films = films.head(row_count) 
             else:
-                films = films.head()# save first 5 rows       
+                films = films.head(10)# save first 10 rows       
             films_dict = films.to_dict('records')
             return films_dict   
         except : 
@@ -135,11 +140,12 @@ class Film:
 
             cos_sims[doc] = cos_sim
         
-        max_score = cos_sims.most_common(1)
+        max_score = cos_sims.most_common(10)
         
         a,w = zip(*max_score)
-        print('a = ', a)
-        return str(a[0])
+        #print('a = ', a)
+        return a, w
+
 
 #film_model = Film()
 #film_model.query('hero')
