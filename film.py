@@ -19,11 +19,10 @@ class Film:
         self.doc_freqs = Counter()               # document frequencies
         self.doc_lens = Counter()               # document lengths
         self.postings_list = {}                 # a sorted list in which each element is in the form (doc d, tf-idf weight w)
+        self.stopword_list = set( stopwords.words('english') ).union( list(string.punctuation) )
         self.categories = { 'Western', 'Mystery', 'Foreign', 'History', 'Thriller', 'TV Movie', 'Drama', 
             'Horror', 'Adventure', 'Documentary', 'Crime', 'Comedy', 'Family', 'War', 'Romance', 
-            'Fantasy', 'Animation', 'Action', 'Music', 'Science Fiction' }
-        self.stopword_list = set( stopwords.words('english') ).union( list(string.punctuation) )
-
+            'Fantasy', 'Animation', 'Action', 'Music', 'Science Fiction' } # all of the genres used by the dataset
         start = time.time()
         try:
             df_movies.apply(self.process, axis=1) # perform additonal processing

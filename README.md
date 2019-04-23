@@ -53,9 +53,9 @@ Add additional notes about how to deploy this on a live system
 * [FLASK](http://flask.pocoo.org/docs/1.0/) - The web framework used
 * [Python 3](https://docs.python.org/3/) - Programming Language Used
 * [PANDAS](https://pandas.pydata.org/) - Data Analysis Library Used
-* [NLTK] (http://www.nltk.org/index.html) - Text Analysis Library Used
-* [NumPy] (https://www.numpy.org/) - Scientific Computing Library Used
-* [Heroku] (https://devcenter.heroku.com) - Deployment Used
+* [NLTK](http://www.nltk.org/index.html) - Text Analysis Library Used
+* [NumPy](https://www.numpy.org/) - Scientific Computing Library Used
+* [Heroku](https://devcenter.heroku.com) - Deployment Used
 
 
 ## Authors
