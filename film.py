@@ -91,7 +91,7 @@ class Film:
             #print('\n')
             films = pd.concat(films)
             print('found film in df')
-            films = films[['budget', 'title', 'id', 'overview', 'release_date', 'score']]
+            films = films[['budget', 'title', 'id', 'overview', 'release_date', 'score', 'genres']]
             #print(films.head(10))
             row_count = df_movies.shape[0] # number of rows in dataframe
             if row_count < 10:
@@ -166,7 +166,7 @@ class Genre:
             self.categories.add(i['name'])
 
 
-film_model = Genre()
+# film_model = Genre()
 
 #film_model.query('hero')
 

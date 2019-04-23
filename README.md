@@ -44,9 +44,14 @@ To run the flask server locally
 py .\api.py
 ```
 
-## Deployment Heroku
+## Deployment
 
-Add additional notes about how to deploy this on a live system
+To deploy the application to Heroku after setting up heroku cli on your machine using git
+```
+git push heroku master
+```
+
+* To set up Heroku cli on your machine (https://devcenter.heroku.com/articles/git)
 
 ## Built With
 
