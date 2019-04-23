@@ -19,6 +19,9 @@ class Film:
         self.doc_freqs = Counter()               # document frequencies
         self.doc_lens = Counter()               # document lengths
         self.postings_list = {}                 # a sorted list in which each element is in the form (doc d, tf-idf weight w)
+        self.categories = { 'Western', 'Mystery', 'Foreign', 'History', 'Thriller', 'TV Movie', 'Drama', 
+            'Horror', 'Adventure', 'Documentary', 'Crime', 'Comedy', 'Family', 'War', 'Romance', 
+            'Fantasy', 'Animation', 'Action', 'Music', 'Science Fiction' }
         self.stopword_list = set( stopwords.words('english') ).union( list(string.punctuation) )
 
         start = time.time()
@@ -149,9 +152,7 @@ class Film:
 class Genre:
     def __init__(self):
         try:
-            self.categories = {'Western', 'Mystery', 'Foreign', 'History', 'Thriller', 'TV Movie', 'Drama', 
-            'Horror', 'Adventure', 'Documentary', 'Crime', 'Comedy', 'Family', 'War', 'Romance', 
-            'Fantasy', 'Animation', 'Action', 'Music', 'Science Fiction'}
+            
             start = time.time()
             df_movies.apply(self.process, axis=1)
         except:
