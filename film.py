@@ -146,8 +146,28 @@ class Film:
         #print('a = ', a)
         return a, w
 
+class Genre:
+    def __init__(self):
+        try:
+            self.categories = {'Western', 'Mystery', 'Foreign', 'History', 'Thriller', 'TV Movie', 'Drama', 
+            'Horror', 'Adventure', 'Documentary', 'Crime', 'Comedy', 'Family', 'War', 'Romance', 
+            'Fantasy', 'Animation', 'Action', 'Music', 'Science Fiction'}
+            start = time.time()
+            df_movies.apply(self.process, axis=1)
+        except:
+            print('error')
+        print('success', ( time.time() - start ) )
+        print('genre list:', self.categories)
+    
+    def process(self, df):
+        genre_str = str(df['genres'])
+        genre_json = json.loads(genre_str)
+        for i in genre_json:
+            self.categories.add(i['name'])
 
-#film_model = Film()
+
+film_model = Genre()
+
 #film_model.query('hero')
 
 # df = pd.read_csv('./tmdb_5000_movies.csv')
