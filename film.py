@@ -152,7 +152,7 @@ class Film:
 class Genre:
     def __init__(self):
         try:
-            
+            self.categories = set()
             start = time.time()
             df_movies.apply(self.process, axis=1)
         except:
