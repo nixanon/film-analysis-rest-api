@@ -3,48 +3,127 @@ import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 import numpy as np # linear algebra
 import string
 import time
+import sys
 from nltk.tokenize import RegexpTokenizer
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer 
 from math import log10, sqrt
 from collections import Counter
 
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics import accuracy_score
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+import pickle
+import re
+
 df_movies = pd.read_csv('./tmdb_5000_movies.csv')
+df_movies = df_movies.drop(columns=['runtime','spoken_languages', 'tagline','production_companies', 
+'production_countries', 'original_title', 'original_language', 'keywords', 'status'])
+
+categories = [ 'Western', 'Mystery', 'Foreign', 'History', 'Thriller', 'TV Movie', 'Drama', 
+            'Horror', 'Adventure', 'Documentary', 'Crime', 'Comedy', 'Family', 'War', 'Romance', 
+            'Fantasy', 'Animation', 'Action', 'Music', 'Science Fiction', 'tokens' ] # all of the genres used by the dataset
+
+df_movies = df_movies.reindex( df_movies.columns.union(categories), axis=1 )
+del categories[-1]
+for c in categories:
+    df_movies[c] = 0
+
 class Film:
     def __init__(self):
         self.stemmer = PorterStemmer()
         self.tokenizer = RegexpTokenizer(r'[a-zA-Z]+')
         self.tf_idfs = {}                        # tf-idf vectors
         self.term_freqs = {}                     # (tfs) term frequencies of all tokens in all documents
+        self.genre_term_freqs = {}
+        self.models = []
+        for c in categories:
+            self.genre_term_freqs[c] = Counter()
+        self.genre_freqs = Counter()             # keep track of all the occurences of each genre
         self.doc_freqs = Counter()               # document frequencies
-        self.doc_lens = Counter()               # document lengths
-        self.postings_list = {}                 # a sorted list in which each element is in the form (doc d, tf-idf weight w)
-        self.stopword_list = set( stopwords.words('english') ).union( list(string.punctuation) )
-        self.categories = { 'Western', 'Mystery', 'Foreign', 'History', 'Thriller', 'TV Movie', 'Drama', 
-            'Horror', 'Adventure', 'Documentary', 'Crime', 'Comedy', 'Family', 'War', 'Romance', 
-            'Fantasy', 'Animation', 'Action', 'Music', 'Science Fiction' } # all of the genres used by the dataset
+        self.doc_lens = Counter()                # document lengths
+        self.postings_list = {}                  # a sorted list in which each element is in the form (doc d, tf-idf weight w)
+        self.stopword_list = set( stopwords.words('english') ).union( list(string.punctuation) )    
+        self.df_genres = pd.DataFrame(columns = ['title'])
         start = time.time()
         try:
-            df_movies.apply(self.process, axis=1) # perform additonal processing
+            global df_movies
+            df_movies = df_movies.apply(self.process, axis=1) # perform additonal processing
+            print(self.genre_freqs)
             self.calcTFIDF()
             self.normWeights()
+            # Define a pipeline combining a text feature extractor with multi label classifier
+            self.train, self.test = train_test_split(df_movies, random_state=42, test_size=0.25, shuffle=True)
+            self.X_train = self.train.overview
+            self.X_test = self.test.overview
+   
         except:
             print('error ', (time.time()-start))
+            return
+        query = """cryptic messag bond past send trail uncov"""
+        svc_score = {}
+        self.SVC_pipeline = Pipeline([
+          ('tfidf', TfidfVectorizer(stop_words=self.stopword_list)),
+          ('clf', OneVsRestClassifier(LinearSVC() , n_jobs=1)),
+        ])
+        for category in categories:
+          #print('... Processing {}'.format(category))
+          # train the model using X_dtm & y
+          self.SVC_pipeline.fit( self.X_train.values.astype('U'), self.train[category])
+          # compute the testing accuracy
+          prediction = self.SVC_pipeline.predict( self.X_test.values.astype('U'))
+          svc_score[category] = self.SVC_pipeline.score( self.X_test.values.astype('U'), self.test[category])
+          model = pickle.dumps(self.SVC_pipeline)
+          self.models.append(model)
+          
+        # model scores average across categories
+        svc_avg = 0.0
+        n = len(categories)
+        for i, category in enumerate(categories):
+          svc_avg += svc_score[category]
+          clf2 = pickle.loads(self.models[i])
+          query_pred = clf2.predict([query])
+          print('query prediction for {} is : {}'.format( category, query_pred) )    
+          
+        svc_avg = svc_avg / n
+        print("SVC avg score: {:.2f}".format(svc_avg))
         
         print('sucess ', (time.time()-start))
 
-           
     def process(self, df):
         doc = str(df['overview']).lower() # convert to lowercase
         title = str(df['title'])
         try:
             tokens = self.tokenizer.tokenize(doc)        # tokenize each overview
             tokens = [self.stemmer.stem(token) for token in tokens if token not in self.stopword_list] # remove all stopwords/punctuation, and stem using porter stemmer
-            self.term_freqs[title] = Counter(tokens)   # save the term frequency to list of all term frequencies
-            self.doc_freqs += Counter(list(set(tokens))) # update document frequencies           
+            self.term_freqs[title] = Counter(tokens)     # save the term frequency to list of all term frequencies
+            self.doc_freqs += Counter(list(set(tokens))) # update document frequencies
+            df['tokens'] = ' '.join(tokens)            
         except:
             print("error occured in process method")
-            return None
+            sys.exit()
+
+        try:
+            genre_str = str(df['genres'])
+            genre_json = json.loads(genre_str)
+
+            for i in genre_json:
+                self.genre_freqs[i['name']] += 1
+                self.genre_term_freqs[i['name']] += Counter(tokens)
+                df[ i['name'] ] = 1
+                
+            return df
+        except:
+            print('error w/genre freq counter')
+            sys.exit()
+    
     def calcWeight(self, title, token):
         idf = self.getIDF(token)
         return (1+log10(self.term_freqs[title][token])) * idf
@@ -102,6 +181,12 @@ class Film:
             return films_dict   
         except : 
             return None
+    
+    def query2(self, q_str):    
+      tokens = self.tokenizer.tokenize(q_str)        # tokenize each overview
+      tokens = [self.stemmer.stem(token) for token in tokens if token not in self.stopword_list] # remove all stopwords/punctuation, and stem using porter stemmer
+      return ' '.join(tokens)
+        
 
     def query(self, q_str):
         q_str = q_str.lower() # lowercase the string
@@ -154,6 +239,7 @@ class Genre:
             self.categories = set()
             start = time.time()
             df_movies.apply(self.process, axis=1)
+            
         except:
             print('error')
         print('success', ( time.time() - start ) )
@@ -165,8 +251,31 @@ class Genre:
         for i in genre_json:
             self.categories.add(i['name'])
 
+class Genre2:
+    def __init__(self, summary):
+        # define cols needed for classification
+        col = ['title','overview', 'genres']
+        self.df = df_movies[col]
+        self.df = self.df[pd.notnull(self.df['overview'])]
+        self.df.columns = ['title','overview', 'genres']
+        self.df['category_id'] = self.df['genres'].factorize()[0]
 
-# film_model = Genre()
+        # self.df.assign(mean_a=df.a.mean(), mean_b=df.b.mean())
+        print(self.df.head())
+        
+        X_train, X_test, y_train, y_test = train_test_split(self.df['overview'], self.df['genres'], random_state = 0)
+        count_vect = CountVectorizer()
+        X_train_counts = count_vect.fit_transform(X_train)
+        tfidf_transformer = TfidfTransformer()
+        X_train_tfidf = tfidf_transformer.fit_transform(X_train_counts)
+        clf = MultinomialNB().fit(X_train_tfidf, y_train)
+
+        print(clf.predict(count_vect.transform([summary])))
+
+film_model = Film()
+
+#film_model = Genre2('In the 22nd century, a paraplegic Marine is dispatched to the moon Pandora on a unique mission, but becomes torn between following orders and protecting an alien civilization.')
+
 
 #film_model.query('hero')
 
